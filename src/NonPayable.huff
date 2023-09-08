@@ -9,5 +9,38 @@
  */
 
 #define macro MAIN() = takes(0) returns(0) {
+    callvalue       //      stack output:    value: the value of the current call in wei.
+                    //      description:     Get deposited value by the instruction/transaction responsible for this execution
+                    //  [msg.value]
+    iszero          //      stack input:     a: integer.
+                    //      stack output:    a == 0: 1 if a is 0, 0 otherwise.
+                    //      description:     Simple not operator
+                    //  [0_or_1]
+    ret             //      description:     ret PC
+                    //  [ret_jumpdest, 0_or_1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  []
 
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, 0]
+    revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                    //                      size: byte size to copy (size of the return data).
+                    //      description:    Halt execution reverting state changes but returning data and remaining gas
+                    //  []
+
+    ret:
+        returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0]
+        returndatasize  //  [0, 0]
+        return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                        //                      size: byte size to copy (size of the return data)
+                        //      description:    Halt execution returning output data
+                        //  []
 }

@@ -11,6 +11,143 @@
 #define function balanceOf(address) payable returns(uint256)
 #define function withdraw(uint256) payable returns()
 
-#define macro MAIN() = takes(0) returns(0) {
+#define macro BALANCEOF() = takes (0) returns (0) {
+    0x04            //  [0x4]
+    calldataload    //  [addr_arg]
+    sload           //  [addr_arg_balance]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, addr_arg_balance]
+    mstore          //      stack input:    offset: offset in the memory in bytes.
+                    //                      value: 32-byte value to write in the memory
+                    //      description:    Save word to memory
+                    //  []
+    0x20            //  [0x20]
+    returndatasize  //  [0, 0x20]
+    return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                    //                      size: byte size to copy (size of the return data)
+                    //      description:    Halt execution returning output data
+                    //  []
+}
 
+#define macro WITHDRAW() = takes (0) returns (0) {
+    0x04            //  [0x4]
+    calldataload    //  [amount]
+    caller          //  [caller_addr, amount]
+    sload           //  [caller_addr_balance, amount]
+    dup2            //  [amount, caller_addr_balance, amount]
+    dup2            //  [caller_addr_balance, amount, caller_addr_balance, amount]
+    lt              //  [0_or_1, caller_addr_balance, amount]
+    notEnoughEth
+    jumpi
+
+    dup1            //  [caller_addr_balance, caller_addr_balance, amount]
+    dup3            //  [amount, caller_addr_balance, caller_addr_balance, amount]
+    sub             //  [new_balance, caller_addr_balance, amount]
+    caller          //  [caller_addr, new_balance, caller_addr_balance, amount]
+    sstore          //  [caller_addr_balance, amount]
+    pop             //  [amount]
+    returndatasize  //  [0x00, amount]
+    dup1            //  [0x00, 0x00, amount]
+    dup1            //  [0x00, 0x00, 0x00, amount]
+    dup1            //  [0x00, 0x00, 0x00, 0x00, amount]
+    swap4           //  [amount, 0x00, 0x00, 0x00, 0x00]
+    caller          //  [caller, amount, 0x00, 0x00, 0x00, 0x00]
+    gas             //  [gasleft, caller, amount, 0x00, 0x00, 0x00, 0x00]
+    call            //  [0_or_1]
+
+    iszero          //  [0_or_1]
+    notEnoughEth
+    jumpi
+    
+    returndatasize
+    dup1
+    stop
+
+    notEnoughEth:
+        returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0]
+        returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0, 0]
+        revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                        //                      size: byte size to copy (size of the return data).
+                        //      description:    Halt execution reverting state changes but returning data and remaining gas
+                        //  []
+}
+
+#define macro MAIN() = takes(0) returns(0) {
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg]
+    0xE0            //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [calldataload_0x20, 0xE0]
+    shr             //      stack input:     shift: number of bits to shift to the right.
+                    //                       value: 32 bytes to shift.
+                    //      stack output:    value >> shift: the shifted value. If shift is bigger than 255, returns 0.
+                    //      description:     Logical right shift operation
+                    //  [func_sig]
+    dup1            //  [func_sig, func_sig]
+    __FUNC_SIG(balanceOf)
+                    //      description:     At compile time, the invocation of __FUNC_SIG is substituted with PUSH4 function_selector, where function_selector is the 4 byte function selector of the passed function definition or string. If a string is passed, it must represent a valid function signature i.e. "test(address, uint256)"
+                    //  [func_sig_balanceOf, func_sig, func_sig]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1, func_sig]
+    balanceOf       //      description:     balanceOf PC
+                    //  [balanceOf_jumpdest, 0_or_1, func_sig]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  [func_sig]
+
+    __FUNC_SIG(withdraw)
+                    //      description:     At compile time, the invocation of __FUNC_SIG is substituted with PUSH4 function_selector, where function_selector is the 4 byte function selector of the passed function definition or string. If a string is passed, it must represent a valid function signature i.e. "test(address, uint256)"
+                    //  [func_sig_withdraw, func_sig]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1]
+    withdraw        //      description:     withdraw PC
+                    //  [withdraw_jumpdest, 0_or_1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  []
+
+    caller          //      stack output:   address: the 20-byte address of the caller account. This is the account that did the last call (except delegate call).
+                    //      description:     Get caller address
+                    //  [caller_addr]
+    sload           //      stack input:     key: 32-byte key in storage.
+                    //      stack output:    value: 32-byte value corresponding to that key. 0 if that key was never written before.
+                    //      description:     Load word from storage
+                    //  [caller_addr_balance]
+    callvalue       //      stack output:    value: the value of the current call in wei.
+                    //      description:     Get deposited value by the instruction/transaction responsible for this execution
+                    //  [msg.value]
+    add             //      stack input:     a: first integer value to add.
+                    //                       b: second integer value to add.
+                    //      stack output:    a + b: integer result of the addition modulo 2256.
+                    //      description:     Addition operation
+                    //  [caller_addr_balance_+_msg.value]
+    caller          //  [caller_addr, new_balance]
+    sstore          //      stack input:     key: 32-byte key in storage.
+                    //                       value: 32-byte value to store.
+                    //  []
+    stop            //      description:     Halts execution
+
+    balanceOf:
+        BALANCEOF()
+
+    withdraw:
+        WITHDRAW()
 }

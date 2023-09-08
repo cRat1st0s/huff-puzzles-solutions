@@ -10,7 +10,77 @@
 
  #define function sendEther(address) payable returns()
 
+#define macro SENDETHER() = takes (0) returns (0) {
+    returndatasize  //  [0x0]
+    returndatasize  //  [0x0, 0x0]
+    returndatasize  //  [0x0, 0x0, 0x0]
+    returndatasize  //  [0x0, 0x0, 0x0, 0x0]
+    callvalue       //      stack output:    value: the value of the current call in wei.
+                    //      description:     Get deposited value by the instruction/transaction responsible for this execution
+                    //  [msg.value, 0x0, 0x0, 0x0, 0x0]
+    0x04            //  [0x4, msg.value, 0x0, 0x0, 0x0, 0x0]
+    calldataload    //  [address_arg, msg.value, 0x0, 0x0, 0x0, 0x0]
+    gas             //      stack output:    gas: remaining gas (after this instruction).
+                    //  [gas, address_arg, msg.value, 0x0, 0x0, 0x0, 0x0]
+    call            //      stack input:     gas: amount of gas to send to the sub context to execute. The gas that is not used by the sub context is returned to this one.
+                    //                       address: the account which context to execute.
+                    //                       value: value in wei to send to the account.
+                    //                       argsOffset: byte offset in the memory in bytes, the calldata of the sub context.
+                    //                       argsSize: byte size to copy (size of the calldata).
+                    //                       retOffset: byte offset in the memory in bytes, where to store the return data of the sub context.
+                    //                       retSize: byte size to copy (size of the return data).
+                    //      stack output:    success: return 0 if the sub context reverted, 1 otherwise.
+                    //      description:     Message-call into an account
+                    //  [0_or_1]
+}
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg]
+    0xE0            //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [calldataload_0x20, 0xE0]
+    shr             //      stack input:     shift: number of bits to shift to the right.
+                    //                       value: 32 bytes to shift.
+                    //      stack output:    value >> shift: the shifted value. If shift is bigger than 255, returns 0.
+                    //      description:     Logical right shift operation
+                    //  [func_sig]
+    dup1            //      stack input:     value: value to duplicate.
+                    //      stack output:    value: duplicated value.
+                    //                       value: original value.
+                    //      description:     Duplicate 1st stack item
+                    //  [func_sig, func_sig]
+    __FUNC_SIG(sendEther)
+                    //      description:     At compile time, the invocation of __FUNC_SIG is substituted with PUSH4 function_selector, where function_selector is the 4 byte function selector of the passed function definition or string. If a string is passed, it must represent a valid function signature i.e. "test(address, uint256)"
+                    //  [func_sig_sendEther, func_sig, func_sig]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1, func_sig]
+    sendEther           //      description:     sendEther PC
+                    //  [sendEther_jumpdest, 0_or_1, func_sig]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  [func_sig]
+
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, 0]
+    revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                    //                      size: byte size to copy (size of the return data).
+                    //      description:    Halt execution reverting state changes but returning data and remaining gas
+                    //  []
+
+    sendEther:
+        SENDETHER()   
  }

@@ -24,6 +24,116 @@
  #define error OutOfBounds()
  #define error ZeroArray()
 
+#define macro OUT_OF_BOUNDS_ERROR() = takes(0) returns(0) {
+    __ERROR(OutOfBounds) returndatasize mstore
+    0x04 returndatasize revert
+}
+
+#define macro ZERO_ARRAY_ERROR() = takes(0) returns(0) {
+    __ERROR(ZeroArray) returndatasize mstore
+    0x04 returndatasize revert 
+}
+
+#define macro LENGTH() = takes(0) returns(0) {    
+    returndatasize sload
+    returndatasize mstore
+    0x20 returndatasize return
+}
+
+ #define macro PUSHH() = takes(0) returns (0) {
+    0x04 calldataload           // [num]
+    returndatasize              // [ptr, num]
+    dup1 sload                  // [length, ptr, num]
+    swap1 dup2                  // [length, ptr, length, num]
+    0x01 add                    // [length++, ptr, length, num]
+    dup2                        // [ptr, length++, ptr, length, num]
+    sstore                      // [ptr, length, num]
+    0x20 swap1                  // [ptr, 32, length, num]
+    sha3                        // [&arr, length, num]
+    swap1 0x20 mul              // [32*length, &arr, num]
+    add                         // [&arr[lastValue], num]
+    sstore                      // []
+
+    0x20 0x00 return
+ }
+
+ #define macro POPP() = takes(0) returns(0) {
+    returndatasize              // [ptr]
+    dup1 sload                  // [length, ptr]
+    dup1 iszero error jumpi     // [length, ptr]
+    0x01 dup2 sub               // [length--, length, ptr]
+    dup3 sstore                 // [length, ptr]
+    swap1 0x20 swap1            // [ptr, 32, length]
+    sha3                        // [&arr, length]
+    swap1 0x20 mul              // [32*length, &arr]
+    add                         // [&arr[lastValue]]
+    0x00 swap1 sstore           // []
+    0x20 0x00 return
+
+    error:
+        ZERO_ARRAY_ERROR()
+ }
+
+ #define macro READ() = takes(0) returns(0) {
+    0x04 calldataload               // [index]
+    returndatasize                         // [ptr, index]
+    dup1                            // [ptr, ptr, index]
+    sload                           // [length, ptr, index]
+    dup3 0x01 add                   // [index++, length, ptr, index]
+    gt error jumpi                  // [ptr, index]
+    0x20 swap1                      // [ptr, 32, index]
+    sha3                            // [&arr, index]
+    swap1 0x20 mul                  // [32*index, &arr]
+    add sload                       // [arr[index]]
+    0x00 mstore                     // []
+    0x20 0x00 return
+
+    error:
+        OUT_OF_BOUNDS_ERROR()
+ }
+
+ #define macro WRITE() = takes(0) returns(0) {
+    0x24 calldataload               // [num]
+    0x04 calldataload               // [index, num]
+    returndatasize                         // [ptr, index, num]
+    dup1                            // [ptr, ptr, index, num]
+    sload                           // [length, ptr, index, num]
+    dup3                            // [index, length, ptr, index, num]
+    0x01 add                        // [index++, length, ptr, index, num]
+    gt error jumpi                  // [ptr, index, num]
+    0x20 swap1                      // [ptr, 32, index, num]
+    sha3                            // [&arr, index, num]
+    swap1 0x20 mul                  // [32*index, &arr, num]
+    add                             // [&arr[index], num]
+    sstore
+    0x20 0x00 return
+
+    error:
+        OUT_OF_BOUNDS_ERROR()
+ }
+
  #define macro MAIN() = takes(0) returns(0) {
-    
+    returndatasize calldataload 0xe0 shr
+    dup1 __FUNC_SIG(pushh) eq pushh jumpi
+    dup1 __FUNC_SIG(popp) eq popp jumpi
+    dup1 __FUNC_SIG(read) eq read jumpi
+    dup1 __FUNC_SIG(length) eq length jumpi
+    dup1 __FUNC_SIG(write) eq write jumpi
+
+    returndatasize dup1 revert
+
+    pushh:
+        PUSHH()
+
+    popp:
+        POPP()
+
+    read:
+        READ()
+
+    length:
+        LENGTH()
+
+    write:
+        WRITE()
  }

@@ -8,5 +8,24 @@
  */
 
 #define macro MAIN() = takes(0) returns(0) {
-   
+    caller          //      stack output:    address: the 20-byte address of the caller account. This is the account that did the last call (except delegate call).
+                    //      description:     Get caller address
+                    //  [msg_sender]
+    balance         //      stack input:     address: 20-byte address of the account to check.
+                    //      stack output:    balance: balance of the given account in wei. Returns 0 if the account doesn't exist.
+                    //      description:     Get balance of the given account
+                    //  [msg_sender_balance]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, msg_sender_balance]
+    mstore          //      stack input:    offset: offset in the memory in bytes.
+                    //                      value: 32-byte value to write in the memory
+                    //      description:    Save word to memory
+                    //  []
+    0x20            //  [0x20]
+    returndatasize  //  [0, 0x20]
+    return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                    //                      size: byte size to copy (size of the return data)
+                    //      description:    Halt execution returning output data
+                    //  []
 }

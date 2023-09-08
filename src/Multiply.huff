@@ -11,7 +11,175 @@
 
 #define function multiply(uint256, uint256) payable returns(uint256)
 
+/// @notice Multiplies two numbers and reverts on overflow
+#define macro MULTIPLY() = takes (0) returns (0) {
+    0x4             //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [0x4]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg1]
+    0x24            //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [0x24, uint256_arg1]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg2, uint256_arg1]
+    dup2            //      stack input:     a: ignored value.
+                    //                       b: value to duplicate.
+                    //      stack output:    b: duplicated value.
+                    //                       a: ignored value.
+                    //                       b: original value.
+                    //      description:     Duplicate 2nd stack item
+                    //  [uint256_arg1, uint256_arg2, uint256_arg1]
+    dup2            //      stack input:     a: ignored value.
+                    //                       b: value to duplicate.
+                    //      stack output:    b: duplicated value.
+                    //                       a: ignored value.
+                    //                       b: original value.
+                    //      description:     Duplicate 2nd stack item
+                    //  [uint256_arg2, uint256_arg1, uint256_arg2, uint256_arg1]
+    mul             //      stack input:     a: first integer value to multiply.
+                    //                       b: second integer value to multiply.
+                    //      stack output:    a * b: integer result of the multiplication modulo 2256.
+                    //      description:     Multiplication operation
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+
+    dup1            //      stack input:     value: value to duplicate.
+                    //      stack output:    value: duplicated value.
+                    //                       value: original value.
+                    //      description:     Duplicate 1st stack item
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+    iszero          //      stack input:     a: integer.
+                    //      stack output:    a == 0: 1 if a is 0, 0 otherwise.
+                    //      description:     Simple not operator
+                    //  [0_or_1, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+    mul_zero        //      description:     mul_zero PC
+                    //  [mul_zero_jumpdest, 0_or_1, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+
+    swap1           //      stack input:     a: value to swap.
+                    //                       b: value to swap.
+                    //      stack output:    b: swapped value.
+                    //                       a: swapped value.
+                    //      description:     Exchange 1st and 2nd stack items
+                    //  [uint256_arg2, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    dup2            //      stack input:     a: ignored value.
+                    //                       b: value to duplicate.
+                    //      stack output:    b: duplicated value.
+                    //                       a: ignored value.
+                    //                       b: original value.
+                    //      description:     Duplicate 2nd stack item
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    div             //      stack input:     a: integer numerator
+                    //                       b: integer denominator.
+                    //      stack output:    a // b: integer result of the integer division. If the denominator is 0, the result will be 0.
+                    //      description:     Integer division operation
+                    //  [uint256_arg2_*_uint256_arg1_/_uint256_arg2, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    dup3            //      stack input:     a: ignored value.
+                    //                       b: ignored value.
+                    //                       c: value to duplicate.
+                    //      stack output:    c: duplicated value.
+                    //                       a: ignored value.
+                    //                       b: ignored value.
+                    //                       c: ignored value.
+                    //      description:     Duplicate 3rd stack item
+                    //  [uint256_arg1, uint256_arg2_*_uint256_arg1_/_uint256_arg2, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    ret             //      description:     ret PC
+                    //  [ret_jumpdest, 0_or_1, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg1]
+
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, 0, uint256_arg2_*_uint256_arg1, uint256_arg1]
+    revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                    //                      size: byte size to copy (size of the return data).
+                    //      description:    Halt execution reverting state changes but returning data and remaining gas
+                    //  [uint256_arg2_*_uint256_arg1, uint256_arg1]
+
+    mul_zero:
+        returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        ret             //      description:     ret PC
+                        //  [ret_jumpdest, 0, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        jump            //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                        //      description:     Alter the program counter
+                        //  [0, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+
+    ret:
+        returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0, 0, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        mstore          //      stack input:    offset: offset in the memory in bytes.
+                        //                      value: 32-byte value to write in the memory
+                        //      description:    Save word to memory
+                        //  [uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        0x20            //  [0x20, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        returndatasize  //  [0, 0x20, uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+        return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                        //                      size: byte size to copy (size of the return data)
+                        //      description:    Halt execution returning output data
+                        //  [uint256_arg2_*_uint256_arg1, uint256_arg2, uint256_arg1]
+}
 
 #define macro MAIN() = takes(0) returns(0) {
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg]
+    0xE0            //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [calldataload_0x20, 0xE0]
+    shr             //      stack input:     shift: number of bits to shift to the right.
+                    //                       value: 32 bytes to shift.
+                    //      stack output:    value >> shift: the shifted value. If shift is bigger than 255, returns 0.
+                    //      description:     Logical right shift operation
+                    //  [func_sig]
+    __FUNC_SIG(multiply)
+                    //      description:     At compile time, the invocation of __FUNC_SIG is substituted with PUSH4 function_selector, where function_selector is the 4 byte function selector of the passed function definition or string. If a string is passed, it must represent a valid function signature i.e. "test(address, uint256)"
+                    //  [func_sig_multiply, func_sig]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1]
+    multiply        //      description:     add1 PC
+                    //  [add1_jumpdest, 0_or_1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  []
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0, 0x0]
+    revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                    //                      size: byte size to copy (size of the return data).
+                    //      description:    Halt execution reverting state changes but returning data and remaining gas
+                    //  []
 
+    multiply:
+        MULTIPLY()
 }

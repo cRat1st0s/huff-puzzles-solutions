@@ -14,5 +14,24 @@
 #define error OnlyHuff()
 
 #define macro MAIN() = takes(0) returns(0) {
-    
+    __ERROR(OnlyHuff)   //      https://docs.huff.sh/get-started/huff-by-example/#custom-errors
+                        //      description:     Custom errors can be defined and used by the __ERROR builtin to push the left-padded 4 byte error selector to the stack.
+                        //  [error]
+    returndatasize      //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0, error]
+    mstore              //      stack input:    offset: offset in the memory in bytes.
+                        //                      value: 32-byte value to write in the memory
+                        //      description:    Save word to memory
+                        //  []
+    0x04                //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                        //      description:     Place 1 byte item on stack
+                        //  [0x4]
+    returndatasize      //      stack output:    size: byte size of the return data from the last executed sub context.
+                        //      description:     Get size of output data from the previous call from the current environment
+                        //  [0, 0x4]
+    revert              //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                        //                      size: byte size to copy (size of the return data).
+                        //      description:    Halt execution reverting state changes but returning data and remaining gas
+                        //  []
 }

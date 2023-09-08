@@ -11,7 +11,79 @@
 
 #define function add1(uint256) payable returns(uint256)
 
+/// @notice Adds two numbers and does NOT revert on overflow
+#define macro ADD1() = takes (0) returns (0) {
+    0x4             //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [0x4]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg]
+    0x1             //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [0x1, uint256_arg]
+    add             //      stack input:     a: first integer value to add.
+                    //                       b: second integer value to add.
+                    //      stack output:    a + b: integer result of the addition modulo 2256.
+                    //      description:     Addition operation
+                    //  [uint256_arg_+_1]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, msg_sender_balance]
+    mstore          //      stack input:    offset: offset in the memory in bytes.
+                    //                      value: 32-byte value to write in the memory
+                    //      description:    Save word to memory
+                    //  []
+    0x20            //  [0x20]
+    returndatasize  //  [0, 0x20]
+    return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                    //                      size: byte size to copy (size of the return data)
+                    //      description:    Halt execution returning output data
+                    //  []
+}
 
 #define macro MAIN() = takes(0) returns(0) {
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    calldataload    //      stack input:     i: byte offset in the calldata.
+                    //      stack output:    data[i]: 32-byte value starting from the given offset of the calldata. All bytes after the end of the calldata are set to 0.
+                    //      description:     Get input data of current environment
+                    //  [uint256_arg]
+    0xE0            //      stack output:    value: pushed value, aligned to the right (put in the lowest significant bytes).
+                    //      description:     Place 1 byte item on stack
+                    //  [calldataload_0x20, 0xE0]
+    shr             //      stack input:     shift: number of bits to shift to the right.
+                    //                       value: 32 bytes to shift.
+                    //      stack output:    value >> shift: the shifted value. If shift is bigger than 255, returns 0.
+                    //      description:     Logical right shift operation
+                    //  [func_sig]
+    __FUNC_SIG(add1)
+                    //      description:     At compile time, the invocation of __FUNC_SIG is substituted with PUSH4 function_selector, where function_selector is the 4 byte function selector of the passed function definition or string. If a string is passed, it must represent a valid function signature i.e. "test(address, uint256)"
+                    //  [func_sig_add1, func_sig]
+    eq              //      stack input:     a: left side integer.
+                    //                       b: right side integer.
+                    //      stack output:    a == b: 1 if the left side is equal to the right side, 0 otherwise.
+                    //      description:     Equality comparison
+                    //  [0_or_1]
+    add1            //      description:     add1 PC
+                    //  [add1_jumpdest, 0_or_1]
+    jumpi           //      stack input:     counter: byte offset in the deployed code where execution will continue from. Must be a JUMPDEST instruction.
+                    //                       b: the program counter will be altered with the new value only if this value is different from 0. Otherwise, the program counter is simply incremented and the next instruction will be executed.
+                    //      description:     Conditionally alter the program counter
+                    //  []
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0x0, 0x0]
+    revert          //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                    //                      size: byte size to copy (size of the return data).
+                    //      description:    Halt execution reverting state changes but returning data and remaining gas
+                    //  []
 
+    add1:
+        ADD1()
 }

@@ -9,5 +9,40 @@
 
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+    calldatasize    //      stack output:    size: byte size of the calldata.
+                    //      description:     Get size of input data in current environment
+                    //  [size]
+    dup1            //  [size, size]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, size, size]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, 0, size, size]
+    calldatacopy    //      stack input:    destOffset: byte offset in the memory where the result will be copied.
+                    //                      offset: byte offset in the calldata to copy.
+                    //                      size: byte size to copy.
+                    //      description:    Copy input data in current environment to memory
+                    //  [size]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, size]
+    sha3            //      stack input:    offset: byte offset in the memory.
+                    //                      size: byte size to read in the memory.
+                    //      stack output:   hash: Keccak-256 hash of the given data in memory.
+                    //      description:    Compute Keccak-256 hash
+                    //  [hash]
+    returndatasize  //      stack output:    size: byte size of the return data from the last executed sub context.
+                    //      description:     Get size of output data from the previous call from the current environment
+                    //  [0, hash]
+    mstore          //      stack input:    offset: offset in the memory in bytes.
+                    //                      value: 32-byte value to write in the memory
+                    //      description:    Save word to memory
+                    //  []
+    0x20            //  [0x20]
+    returndatasize  //  [0, 0x20]
+    return          //      stack input:    offset: byte offset in the memory in bytes, to copy what will be the return data of this context.
+                    //                      size: byte size to copy (size of the return data)
+                    //      description:    Halt execution returning output data
+                    //  []
  }

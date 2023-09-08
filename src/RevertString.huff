@@ -11,7 +11,50 @@
  *  The task is to write within the `MAIN` macro below, huff code that reverts (all the time) with the string error message `Only Huff`
 */
 
+#define error OnlyHuff(string)
 
 #define macro MAIN() = takes(0) returns(0) {
+    __RIGHTPAD(0x4f6e6c792048756666)    //      https://docs.huff.sh/get-started/huff-by-example/#builtin-functions
+                                        //      description:     At compile time, the invocation of __RIGHTPAD is substituted with PUSH32 padded_literal, where padded_literal is the right padded version of the passed literal.
+                                        // [message]
+    0x9                                 // [message_length, message]
+    __ERROR(OnlyHuff)                   //      https://docs.huff.sh/get-started/huff-by-example/#custom-errors
+                                        //      description:     Custom errors can be defined and used by the __ERROR builtin to push the left-padded 4 byte error selector to the stack.
+                                        // [error_selector, message_length, message]
+
+    0x00                                // [0, error_selector, message_length, message]
+    mstore                              //      stack input:    offset: offset in the memory in bytes.
+                                        //                      value: 32-byte value to write in the memory
+                                        //      description:    Save word to memory
+                                        // [message_length, message]
     
+    0x20                                // [0x20, message_length, message]
+    
+    0x04                                // [0x4, 0x20, message_length, message]
+    
+    mstore                              //      stack input:    offset: offset in the memory in bytes.
+                                        //                      value: 32-byte value to write in the memory
+                                        //      description:    Save word to memory
+                                        // [message_length, message]
+    
+    0x24                                // [0x24, message_length, message]
+    
+    mstore                              //      stack input:    offset: offset in the memory in bytes.
+                                        //                      value: 32-byte value to write in the memory
+                                        //      description:    Save word to memory                              
+                                        // [message]
+    
+    0x44                                // [0x44, message]
+    
+    mstore                              //      stack input:    offset: offset in the memory in bytes.
+                                        //                      value: 32-byte value to write in the memory
+                                        //      description:    Save word to memory
+                                        // []
+
+    0x64                                // [0x64]
+    0x04                                // [0x4, 0x64]
+    revert                              //      stack input:    offset: byte offset in the memory in bytes. The return data of the calling context.
+                                        //                      size: byte size to copy (size of the return data).
+                                        //      description:    Halt execution reverting state changes but returning data and remaining gas
+                                        //  []
 }

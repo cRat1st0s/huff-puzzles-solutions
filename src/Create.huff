@@ -13,5 +13,36 @@
 
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+    0x00 calldataload 0xe0 shr
+    dup1 __FUNC_SIG(makeContract) eq contractJump jumpi
+    0x00 dup1 revert
+
+    contractJump:
+        __RIGHTPAD(0x600a8060093d393df3620caffe3d5260203df3)
+        0x00 mstore                 // []
+        0x14 0x00 0x00              // [value, offset, contractCodeSize]
+        create                      // [addresss]
+        0x00 mstore                 // []
+        0x20 0x00 return            // []
+   
  }
+
+
+// Initialization code
+// PUSH1 0x0a       ->  0x600a
+// DUP1             ->  0x600a80
+// PUSH1 0x09       ->  0x600a806009
+// RETURNDATASIZE   ->  0x600a8060093d
+// CODECOPY         ->  0x600a8060093d39
+// RETURNDATASIZE   ->  0x600a8060093d393d
+// RETURN           ->  0x600a8060093d393df3
+
+// Runtime code
+// PUSH3 0x0caffe  ->  0x620caffe
+// RETURNDATASIZE  ->  0x620caffe3d
+// MSTORE          ->  0x620caffe3d52
+// PUSH1 0x20      ->  0x620caffe3d526020
+// RETURNDATASIZE  ->  0x620caffe3d5260203d
+// RETURN          ->  0x620caffe3d5260203df3
+
+// Contract creation code : 0x600a8060093d393df3620caffe3d5260203df3
